@@ -19,7 +19,7 @@ function Kpi({ label, value, Icon, tone }) {
 const COLORS = { Available: '#16a34a', 'On Trip': '#0284c7', 'In Shop': '#d97706', Retired: '#94a3b8' }
 
 export default function Dashboard() {
-  const { vehicles, drivers, trips, fetchDashboardKpis } = useApp()
+  const { vehicles, drivers, trips, user, fetchDashboardKpis } = useApp()
   const [fType, setFType] = useState('')
   const [fStatus, setFStatus] = useState('')
   const [fRegion, setFRegion] = useState('')
@@ -76,7 +76,16 @@ export default function Dashboard() {
 
   const types = [...new Set(vehicles.map((v) => v.type))]
   const regions = [...new Set(vehicles.map((v) => v.region))]
-  const expiring = drivers.filter((d) => isLicenseExpired(d) || (new Date(d.expiry) - new Date()) / 86400000 < 30)
+  const isDriver = user?.role === 'driver'
+  const myDriver = isDriver ? drivers.find((d) => d.userId === user.id) : null
+  const licenseDrivers = isDriver
+    ? (myDriver ? [myDriver] : [])
+    : drivers.filter((d) => isLicenseExpired(d) || (new Date(d.expiry) - new Date()) / 86400000 < 30)
+  const licenseState = (driver) => {
+    if (isLicenseExpired(driver)) return 'Expired'
+    if ((new Date(driver.expiry) - new Date()) / 86400000 < 30) return 'Expiring soon'
+    return 'Valid'
+  }
 
   return (
     <div className="grid" style={{ gap: 20 }}>
@@ -155,22 +164,24 @@ export default function Dashboard() {
           </div>
         </div>
         <div className="card card-pad">
-          <div className="section-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><FiAlertTriangle /> License Compliance Alerts</div>
-          <div className="section-sub" style={{ marginBottom: 8 }}>Expired or expiring within 30 days</div>
+          <div className="section-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><FiAlertTriangle /> {isDriver ? 'My License Status' : 'License Compliance Alerts'}</div>
+          <div className="section-sub" style={{ marginBottom: 8 }}>{isDriver ? 'Your current license status' : 'Expired or expiring within 30 days'}</div>
           <div className="table-wrap">
             <table>
               <thead><tr><th>Driver</th><th>Expiry</th><th>State</th></tr></thead>
               <tbody>
-                {expiring.map((d) => (
+                {licenseDrivers.map((d) => (
                   <tr key={d.id}>
                     <td>{d.name}</td><td>{d.expiry}</td>
-                    <td>{isLicenseExpired(d)
+                    <td>{licenseState(d) === 'Expired'
                       ? <span className="badge b-red"><span className="dot" />Expired</span>
-                      : <span className="badge b-amber"><span className="dot" />Expiring soon</span>}
+                      : licenseState(d) === 'Expiring soon'
+                        ? <span className="badge b-amber"><span className="dot" />Expiring soon</span>
+                        : <span className="badge b-green"><span className="dot" />Valid</span>}
                     </td>
                   </tr>
                 ))}
-                {!expiring.length && <tr><td colSpan={3} style={{ color: 'var(--success)' }}>All licenses valid</td></tr>}
+                {!licenseDrivers.length && <tr><td colSpan={3} style={{ color: isDriver ? 'var(--text-muted)' : 'var(--success)' }}>{isDriver ? 'No driver profile found for your account' : 'All licenses valid'}</td></tr>}
               </tbody>
             </table>
           </div>
