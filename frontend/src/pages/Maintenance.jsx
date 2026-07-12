@@ -19,9 +19,9 @@ export default function Maintenance() {
   const eligible = vehicles.filter((v) => !['On Trip', 'Retired'].includes(v.status))
 
   const openNew = () => { setForm(EMPTY); setErr(''); setModal(true) }
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault()
-    const res = saveMaintenance({ ...form, cost: Number(form.cost) })
+    const res = await saveMaintenance({ ...form, cost: Number(form.cost) })
     if (!res.ok) return setErr(res.error)
     setModal(false)
   }

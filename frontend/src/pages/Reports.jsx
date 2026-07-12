@@ -1,31 +1,47 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { BarChart, Bar, Cell, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, LineChart, Line, Legend } from 'recharts'
 import { useApp } from '../store/AppContext.jsx'
 import { PageHeader, exportCSV, Empty, inr } from '../components/ui.jsx'
 import { FiTrendingUp, FiDownload } from '../components/icons.jsx'
 
 export default function Reports() {
-  const { vehicles, trips, fuel, maintenance, expenses } = useApp()
+  const { vehicles, trips, fetchAnalytics } = useApp()
+  const [server, setServer] = useState(null)
 
-  const analytics = useMemo(() => vehicles.map((v) => {
-    const vFuel = fuel.filter((f) => f.vehicleId === v.id)
-    const liters = vFuel.reduce((s, f) => s + f.liters, 0)
-    const fuelCost = vFuel.reduce((s, f) => s + f.cost, 0)
-    const maintCost = maintenance.filter((m) => m.vehicleId === v.id).reduce((s, m) => s + m.cost, 0)
-    const expCost = expenses.filter((e) => e.vehicleId === v.id).reduce((s, e) => s + (Number(e.toll) || 0) + (Number(e.other) || 0), 0)
-    const distance = trips.filter((t) => t.vehicleId === v.id && t.status === 'Completed').reduce((s, t) => s + t.distance, 0)
-    const opCost = fuelCost + maintCost + expCost
-    const efficiency = liters ? (distance / liters) : 0
-    const roi = v.cost ? ((v.revenue - (maintCost + fuelCost)) / v.cost) * 100 : 0
-    return {
-      reg: v.reg, name: v.name, distance, liters,
-      efficiency: Number(efficiency.toFixed(2)),
-      opCost, revenue: v.revenue, roi: Number(roi.toFixed(1)),
-    }
-  }), [vehicles, trips, fuel, maintenance, expenses])
+  useEffect(() => {
+    let active = true
+    fetchAnalytics().then((d) => { if (active) setServer(d) }).catch(() => {})
+    return () => { active = false }
+  }, [fetchAnalytics, vehicles, trips])
 
-  const operable = vehicles.filter((v) => v.status !== 'Retired')
-  const utilization = operable.length ? Math.round((vehicles.filter((v) => v.status === 'On Trip').length / operable.length) * 100) : 0
+  const nameByReg = useMemo(() => {
+    const m = {}
+    vehicles.forEach((v) => { m[v.reg] = v.name })
+    return m
+  }, [vehicles])
+
+  // Build the analytics rows from the server response, merging the three datasets by registration number.
+  const analytics = useMemo(() => {
+    if (!server) return []
+    const eff = Object.fromEntries((server.fuelEfficiency || []).map((r) => [r.registrationNumber, r]))
+    const cost = Object.fromEntries((server.operationalCost || []).map((r) => [r.registrationNumber, r]))
+    return (server.vehicleROI || []).map((r) => {
+      const e = eff[r.registrationNumber] || {}
+      const c = cost[r.registrationNumber] || {}
+      return {
+        reg: r.registrationNumber,
+        name: nameByReg[r.registrationNumber] || '—',
+        distance: e.distance || 0,
+        liters: e.liters || 0,
+        efficiency: Number(e.kmPerLiter || 0),
+        opCost: c.totalOperationalCost || 0,
+        revenue: r.revenue || 0,
+        roi: Number(((r.roi || 0) * 100).toFixed(1)),
+      }
+    })
+  }, [server, nameByReg])
+
+  const utilization = server ? Math.round(server.fleetUtilization || 0) : 0
   const totalOpCost = analytics.reduce((s, a) => s + a.opCost, 0)
   const avgEff = analytics.filter((a) => a.efficiency > 0)
   const fleetEff = avgEff.length ? (avgEff.reduce((s, a) => s + a.efficiency, 0) / avgEff.length).toFixed(2) : '0'

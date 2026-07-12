@@ -38,6 +38,8 @@ const createVehicle = async (req, res) => {
             averageRunningCost,
             avgCost,
             acquisitionCost,
+            cost,
+            revenue,
             status,
             region,
         } = req.body;
@@ -48,8 +50,9 @@ const createVehicle = async (req, res) => {
             vehicleType: vehicleType || type,
             maxLoadCapacity: maxLoadCapacity ?? capacity,
             odometer: odometer ?? 0,
-            averageRunningCost: averageRunningCost ?? avgCost ?? 0,
-            acquisitionCost: acquisitionCost ?? avgCost ?? 0,
+            averageRunningCost: averageRunningCost ?? avgCost ?? cost ?? 0,
+            acquisitionCost: acquisitionCost ?? avgCost ?? cost ?? 0,
+            revenue: revenue ?? 0,
             region: region || "Default",
         };
 
@@ -105,4 +108,43 @@ const updateVehicleStatus = async (req, res) => {
     }
 };
 
-module.exports = { getVehicles, createVehicle, updateVehicleStatus };
+const updateVehicle = async (req, res) => {
+    try {
+        const body = req.body;
+        const update = {};
+
+        if (body.registrationNumber || body.regNo || body.reg) update.registrationNumber = (body.registrationNumber || body.regNo || body.reg).trim();
+        if (body.vehicleName || body.name) update.vehicleName = body.vehicleName || body.name;
+        if (body.vehicleType || body.type) update.vehicleType = body.vehicleType || body.type;
+        if (body.maxLoadCapacity != null || body.capacity != null) update.maxLoadCapacity = body.maxLoadCapacity ?? body.capacity;
+        if (body.odometer != null) update.odometer = body.odometer;
+        if (body.acquisitionCost != null || body.cost != null) update.acquisitionCost = body.acquisitionCost ?? body.cost;
+        if (body.averageRunningCost != null || body.cost != null) update.averageRunningCost = body.averageRunningCost ?? body.cost;
+        if (body.revenue != null) update.revenue = body.revenue;
+        if (body.region) update.region = body.region;
+        if (body.status) {
+            const mapped = mapVehicleStatus(body.status);
+            if (!mapped) return res.status(400).json({ success: false, message: "Invalid vehicle status" });
+            update.status = mapped;
+        }
+
+        const vehicle = await Vehicle.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true });
+        if (!vehicle) return res.status(404).json({ success: false, message: "Vehicle not found" });
+
+        return res.status(200).json({ success: true, message: "Vehicle updated", data: vehicle });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+const deleteVehicle = async (req, res) => {
+    try {
+        const vehicle = await Vehicle.findByIdAndDelete(req.params.id);
+        if (!vehicle) return res.status(404).json({ success: false, message: "Vehicle not found" });
+        return res.status(200).json({ success: true, message: "Vehicle deleted" });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+module.exports = { getVehicles, createVehicle, updateVehicleStatus, updateVehicle, deleteVehicle };

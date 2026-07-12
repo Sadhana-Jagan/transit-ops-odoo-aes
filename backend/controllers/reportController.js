@@ -114,7 +114,8 @@ const getAnalytics = async (_req, res) => {
 
         const vehicleRoi = vehicles.map((vehicle) => {
             const id = vehicle._id.toString();
-            const revenue = tripRevenueByVehicle.get(id) || 0;
+            const tripRevenue = tripRevenueByVehicle.get(id) || 0;
+            const revenue = tripRevenue > 0 ? tripRevenue : Number(vehicle.revenue || 0);
             const maintenanceCost = maintenanceByVehicle.get(id) || 0;
             const fuelCost = fuelCostByVehicle.get(id) || 0;
             const acquisitionCost = Number(vehicle.acquisitionCost || 0);

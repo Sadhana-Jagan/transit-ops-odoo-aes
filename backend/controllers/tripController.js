@@ -1,6 +1,7 @@
 const Driver = require("../models/Driver");
 const Trip = require("../models/Trip");
 const Vehicle = require("../models/Vehicle");
+const FuelLog = require("../models/FuelLog");
 const { mapTripStatus } = require("../utils/statusMappers");
 
 const ensureDriverAndVehicleAvailable = async (driver, vehicle) => {
@@ -182,6 +183,16 @@ const updateTripStatus = async (req, res) => {
                 safetyStatus: "Available",
                 $inc: { tripCompletion: 1 },
             });
+
+            // Record fuel usage as a fuel log so analytics stay consistent regardless of caller role.
+            if (fuelConsumed != null && Number(fuelConsumed) > 0) {
+                await FuelLog.create({
+                    vehicle: trip.vehicle._id,
+                    trip: trip._id,
+                    liters: Number(fuelConsumed),
+                    cost: Math.round(Number(fuelConsumed) * 1.8),
+                });
+            }
 
             return res.status(200).json({ success: true, message: "Trip completed", data: trip });
         }

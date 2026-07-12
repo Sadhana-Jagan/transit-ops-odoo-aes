@@ -5,7 +5,7 @@ import { FiUsers, FiSearch, FiPlus, FiDownload, FiEdit2, FiTrash2 } from '../com
 
 const EMPTY = { name: '', license: '', category: 'B', expiry: '', contact: '', tripsCompleted: 0, safety: 80, status: 'Available' }
 const CATS = ['A', 'B', 'C', 'D', 'E']
-const STATUSES = ['Available', 'On Trip', 'Suspended']
+const STATUSES = ['Available', 'On Trip', 'Off Duty', 'Suspended']
 
 export default function Drivers() {
   const { drivers, saveDriver, deleteDriver, user } = useApp()
@@ -22,9 +22,9 @@ export default function Drivers() {
 
   const openNew = () => { setForm(EMPTY); setModal('new') }
   const openEdit = (d) => { setForm(d); setModal('edit') }
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault()
-    saveDriver({ ...form, safety: Number(form.safety), tripsCompleted: Number(form.tripsCompleted) || 0 })
+    await saveDriver({ ...form, safety: Number(form.safety), tripsCompleted: Number(form.tripsCompleted) || 0 })
     setModal(null)
   }
 

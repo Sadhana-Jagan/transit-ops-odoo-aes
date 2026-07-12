@@ -6,7 +6,8 @@ import { FiMap, FiPlus, FiDownload, FiSend, FiCheckCircle, FiSlash } from '../co
 const EMPTY = { source: '', dest: '', vehicleId: '', driverId: '', cargo: '', distance: '' }
 
 export default function Trips() {
-  const { trips, vehicles, drivers, saveTrip, dispatchTrip, completeTrip, cancelTrip } = useApp()
+  const { trips, vehicles, drivers, saveTrip, dispatchTrip, completeTrip, cancelTrip, user } = useApp()
+  const canManage = ['fleet_manager', 'dispatcher', 'driver'].includes(user.role)
   const [status, setStatus] = useState('')
   const [modal, setModal] = useState(null)
   const [form, setForm] = useState(EMPTY)
@@ -14,6 +15,7 @@ export default function Trips() {
   const [complete, setComplete] = useState(null)
   const [odo, setOdo] = useState('')
   const [fuel, setFuel] = useState('')
+  const [revenue, setRevenue] = useState('')
 
   const vName = (id) => vehicles.find((v) => v.id === id)
   const dName = (id) => drivers.find((d) => d.id === id)
@@ -25,15 +27,15 @@ export default function Trips() {
   const rows = useMemo(() => trips.filter((t) => !status || t.status === status), [trips, status])
 
   const openNew = () => { setForm(EMPTY); setErr(''); setModal(true) }
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault()
-    const res = saveTrip({ ...form, cargo: Number(form.cargo), distance: Number(form.distance) })
+    const res = await saveTrip({ ...form, cargo: Number(form.cargo), distance: Number(form.distance) })
     if (!res.ok) return setErr(res.error)
     setModal(null)
   }
-  const doDispatch = (id) => { const r = dispatchTrip(id); if (!r.ok) alert(r.error) }
-  const openComplete = (t) => { setComplete(t); setOdo(vName(t.vehicleId)?.odometer + t.distance || ''); setFuel('') }
-  const doComplete = () => { completeTrip(complete.id, odo, fuel); setComplete(null) }
+  const doDispatch = async (id) => { const r = await dispatchTrip(id); if (!r.ok) alert(r.error) }
+  const openComplete = (t) => { setComplete(t); setOdo(vName(t.vehicleId)?.odometer + t.distance || ''); setFuel(''); setRevenue('') }
+  const doComplete = async () => { await completeTrip(complete.id, odo, fuel, revenue); setComplete(null) }
 
   const selectedVehicle = vName(form.vehicleId)
 
@@ -42,7 +44,7 @@ export default function Trips() {
       <PageHeader title="Trip Management" sub={`${trips.length} trips · lifecycle Draft → Dispatched → Completed`}
         actions={<>
           <button className="btn" onClick={() => exportCSV('trips.csv', trips.map((t) => ({ ...t, vehicle: vName(t.vehicleId)?.reg, driver: dName(t.driverId)?.name })))}><FiDownload /> CSV</button>
-          <button className="btn primary" onClick={openNew}><FiPlus /> Create Trip</button>
+          {canManage && <button className="btn primary" onClick={openNew}><FiPlus /> Create Trip</button>}
         </>} />
 
       <div className="toolbar">
@@ -68,15 +70,15 @@ export default function Trips() {
                 <td><Badge status={t.status} /></td>
                 <td>
                   <div className="row-actions">
-                    {t.status === 'Draft' && <>
+                    {canManage && t.status === 'Draft' && <>
                       <button className="btn sm primary" onClick={() => doDispatch(t.id)}><FiSend /> Dispatch</button>
                       <button className="btn sm danger" onClick={() => cancelTrip(t.id)}><FiSlash /> Cancel</button>
                     </>}
-                    {t.status === 'Dispatched' && <>
+                    {canManage && t.status === 'Dispatched' && <>
                       <button className="btn sm primary" onClick={() => openComplete(t)}><FiCheckCircle /> Complete</button>
                       <button className="btn sm danger" onClick={() => cancelTrip(t.id)}><FiSlash /> Cancel</button>
                     </>}
-                    {['Completed', 'Cancelled'].includes(t.status) && <span className="section-sub">—</span>}
+                    {(!canManage || ['Completed', 'Cancelled'].includes(t.status)) && <span className="section-sub">—</span>}
                   </div>
                 </td>
               </tr>
@@ -141,6 +143,9 @@ export default function Trips() {
           </Field>
           <Field label="Fuel Consumed (liters)">
             <input className="input" type="number" value={fuel} onChange={(e) => setFuel(e.target.value)} placeholder="Adds a fuel log automatically" />
+          </Field>
+          <Field label="Trip Revenue (₹)">
+            <input className="input" type="number" min="0" value={revenue} onChange={(e) => setRevenue(e.target.value)} placeholder="Used for ROI reporting" />
           </Field>
         </Modal>
       )}

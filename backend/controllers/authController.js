@@ -27,6 +27,10 @@ const register = async (req, res) => {
             },
         });
     } catch (error) {
+        if (error.name === "ValidationError") {
+            const message = Object.values(error.errors).map((e) => e.message).join(", ");
+            return res.status(400).json({ success: false, message });
+        }
         return res.status(500).json({ success: false, message: error.message });
     }
 };

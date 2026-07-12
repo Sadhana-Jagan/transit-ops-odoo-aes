@@ -38,10 +38,10 @@ export default function Vehicles() {
   const openNew = () => { setForm(EMPTY); setErr(''); setModal('new') }
   const openEdit = (v) => { setForm(v); setErr(''); setModal('edit') }
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault()
     const payload = { ...form, capacity: Number(form.capacity), odometer: Number(form.odometer), cost: Number(form.cost), revenue: Number(form.revenue) || 0 }
-    const res = saveVehicle(payload)
+    const res = await saveVehicle(payload)
     if (!res.ok) return setErr(res.error)
     setModal(null)
   }
@@ -124,6 +124,9 @@ export default function Vehicles() {
               </Field>
               <Field label="Average Cost (₹)" required>
                 <input className="input" type="number" min="0" required value={form.cost} onChange={(e) => setForm({ ...form, cost: e.target.value })} />
+              </Field>
+              <Field label="Revenue Generated (₹)">
+                <input className="input" type="number" min="0" value={form.revenue} onChange={(e) => setForm({ ...form, revenue: e.target.value })} />
               </Field>
               <Field label="Status">
                 <select className="select" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>{STATUSES.map((s) => <option key={s}>{s}</option>)}</select>

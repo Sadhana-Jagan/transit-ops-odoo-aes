@@ -25,10 +25,10 @@ export default function Fuel() {
   const totalExp = expenses.reduce((s, x) => s + expTotal(x), 0)
   const totalMaint = maintenance.reduce((s, x) => s + x.cost, 0)
 
-  const submitFuel = (e) => { e.preventDefault(); saveFuel({ ...fForm, liters: Number(fForm.liters), cost: Number(fForm.cost) }); setModal(null); setFForm({ vehicleId: '', liters: '', cost: '', date: '' }) }
-  const submitExp = (e) => {
+  const submitFuel = async (e) => { e.preventDefault(); await saveFuel({ ...fForm, liters: Number(fForm.liters), cost: Number(fForm.cost) }); setModal(null); setFForm({ vehicleId: '', liters: '', cost: '', date: '' }) }
+  const submitExp = async (e) => {
     e.preventDefault()
-    saveExpense({ ...eForm, toll: Number(eForm.toll) || 0, other: Number(eForm.other) || 0 })
+    await saveExpense({ ...eForm, toll: Number(eForm.toll) || 0, other: Number(eForm.other) || 0 })
     setModal(null); setEForm({ tripId: '', vehicleId: '', toll: '', other: '', date: '' })
   }
 

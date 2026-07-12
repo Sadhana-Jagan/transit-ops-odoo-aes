@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts'
 import { useApp, isLicenseExpired } from '../store/AppContext.jsx'
 import { Badge } from '../components/ui.jsx'
@@ -19,29 +19,48 @@ function Kpi({ label, value, Icon, tone }) {
 const COLORS = { Available: '#16a34a', 'On Trip': '#0284c7', 'In Shop': '#d97706', Retired: '#94a3b8' }
 
 export default function Dashboard() {
-  const { vehicles, drivers, trips } = useApp()
+  const { vehicles, drivers, trips, fetchDashboardKpis } = useApp()
   const [fType, setFType] = useState('')
   const [fStatus, setFStatus] = useState('')
   const [fRegion, setFRegion] = useState('')
+  const [srvKpis, setSrvKpis] = useState(null)
+
+  useEffect(() => {
+    let active = true
+    fetchDashboardKpis().then((d) => { if (active) setSrvKpis(d) }).catch(() => {})
+    return () => { active = false }
+  }, [fetchDashboardKpis, vehicles, trips, drivers])
 
   const fv = useMemo(() => vehicles.filter((v) =>
     (!fType || v.type === fType) && (!fStatus || v.status === fStatus) && (!fRegion || v.region === fRegion)
   ), [vehicles, fType, fStatus, fRegion])
 
+  // KPI cards use server-computed metrics; fall back to local calc until loaded.
   const kpis = useMemo(() => {
-    const active = fv.filter((v) => v.status === 'On Trip').length
-    const available = fv.filter((v) => v.status === 'Available').length
-    const inShop = fv.filter((v) => v.status === 'In Shop').length
-    const operable = fv.filter((v) => v.status !== 'Retired').length
-    const utilization = operable ? Math.round((active / operable) * 100) : 0
+    if (srvKpis) {
+      const onTrip = Math.max(0, (srvKpis.activeVehicles ?? 0) - (srvKpis.availableVehicles ?? 0) - (srvKpis.vehiclesInMaintenance ?? 0))
+      return {
+        active: onTrip,
+        available: srvKpis.availableVehicles ?? 0,
+        inShop: srvKpis.vehiclesInMaintenance ?? 0,
+        activeTrips: srvKpis.activeTrips ?? 0,
+        pendingTrips: srvKpis.pendingTrips ?? 0,
+        onDuty: srvKpis.driversOnDuty ?? 0,
+        utilization: Math.round(srvKpis.fleetUtilization ?? 0),
+      }
+    }
+    const active = vehicles.filter((v) => v.status === 'On Trip').length
+    const available = vehicles.filter((v) => v.status === 'Available').length
+    const inShop = vehicles.filter((v) => v.status === 'In Shop').length
+    const operable = vehicles.filter((v) => v.status !== 'Retired').length
     return {
       active, available, inShop,
       activeTrips: trips.filter((t) => t.status === 'Dispatched').length,
       pendingTrips: trips.filter((t) => t.status === 'Draft').length,
       onDuty: drivers.filter((d) => d.status === 'On Trip').length,
-      utilization,
+      utilization: operable ? Math.round((active / operable) * 100) : 0,
     }
-  }, [fv, trips, drivers])
+  }, [srvKpis, vehicles, trips, drivers])
 
   const statusData = useMemo(() => {
     const c = {}

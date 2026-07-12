@@ -43,7 +43,7 @@ export default function Layout({ children }) {
             </NavLink>
           ))}
           <div className="sec">Account</div>
-          <a onClick={reset} style={{ cursor: 'pointer' }}><span className="ic"><FiRefreshCw /></span> Reset Demo Data</a>
+          <a onClick={reset} style={{ cursor: 'pointer' }}><span className="ic"><FiRefreshCw /></span> Refresh Data</a>
           <a onClick={logout} style={{ cursor: 'pointer' }}><span className="ic"><FiLogOut /></span> Sign Out</a>
         </nav>
       </aside>

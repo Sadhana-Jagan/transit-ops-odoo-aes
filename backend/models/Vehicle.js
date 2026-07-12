@@ -15,6 +15,7 @@ module.exports = mongoose.model(
             odometer: { type: Number, default: 0 },
             averageRunningCost: { type: Number, default: 0 },
             acquisitionCost: { type: Number, required: true },
+            revenue: { type: Number, default: 0 },
             status: { type: String, enum: ["Available", "OnTrip", "InShop", "Retired"], default: "Available" },
             region: { type: String, default: "Default" },
         },

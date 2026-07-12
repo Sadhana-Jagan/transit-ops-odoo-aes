@@ -92,4 +92,47 @@ const addExpense = async (req, res) => {
     }
 };
 
-module.exports = { addFuelLog, addExpense };
+const getFuelLogs = async (_req, res) => {
+    try {
+        const logs = await FuelLog.find()
+            .populate("vehicle", "registrationNumber vehicleName")
+            .sort({ createdAt: -1 });
+        return res.status(200).json({ success: true, count: logs.length, data: logs });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+const getExpenses = async (_req, res) => {
+    try {
+        const expenses = await Expense.find()
+            .populate("vehicle", "registrationNumber vehicleName")
+            .populate("trip", "source destination")
+            .sort({ createdAt: -1 });
+        return res.status(200).json({ success: true, count: expenses.length, data: expenses });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+const deleteFuelLog = async (req, res) => {
+    try {
+        const log = await FuelLog.findByIdAndDelete(req.params.id);
+        if (!log) return res.status(404).json({ success: false, message: "Fuel log not found" });
+        return res.status(200).json({ success: true, message: "Fuel log deleted" });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+const deleteExpense = async (req, res) => {
+    try {
+        const expense = await Expense.findByIdAndDelete(req.params.id);
+        if (!expense) return res.status(404).json({ success: false, message: "Expense not found" });
+        return res.status(200).json({ success: true, message: "Expense deleted" });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+module.exports = { addFuelLog, addExpense, getFuelLogs, getExpenses, deleteFuelLog, deleteExpense };

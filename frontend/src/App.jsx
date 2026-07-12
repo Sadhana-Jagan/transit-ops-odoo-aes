@@ -30,7 +30,14 @@ function Toasts() {
 }
 
 export default function App() {
-  const { user } = useApp()
+  const { user, booting } = useApp()
+  if (booting) {
+    return (
+      <div style={{ display: 'grid', placeItems: 'center', minHeight: '100vh', color: 'var(--text-muted)' }}>
+        Loading TransitOps…
+      </div>
+    )
+  }
   return (
     <>
       <Routes>

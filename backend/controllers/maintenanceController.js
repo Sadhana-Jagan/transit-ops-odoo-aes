@@ -29,8 +29,8 @@ const scheduleAutoClose = (maintenanceId) => {
 
 const getMaintenance = async (req, res) => {
     try {
-        const filter = { status: "Open" };
-        if (req.query.status) {
+        const filter = {};
+        if (req.query.status && req.query.status !== "all") {
             filter.status = req.query.status;
         }
 
@@ -109,4 +109,14 @@ const completeMaintenance = async (req, res) => {
     }
 };
 
-module.exports = { getMaintenance, createMaintenance, completeMaintenance, closeMaintenanceRecord };
+const deleteMaintenance = async (req, res) => {
+    try {
+        const record = await Maintenance.findByIdAndDelete(req.params.id);
+        if (!record) return res.status(404).json({ success: false, message: "Maintenance record not found" });
+        return res.status(200).json({ success: true, message: "Maintenance record deleted" });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+module.exports = { getMaintenance, createMaintenance, completeMaintenance, closeMaintenanceRecord, deleteMaintenance };
