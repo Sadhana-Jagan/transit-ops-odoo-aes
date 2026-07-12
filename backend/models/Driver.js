@@ -5,10 +5,10 @@ module.exports = mongoose.model(
     new mongoose.Schema(
         {
             name: { type: String, required: true, trim: true },
-            licenseNumber: { type: String, required: true, unique: true, trim: true },
-            licenseCategory: { type: String, required: true },
-            licenseExpiry: { type: Date, required: true },
-            contactNumber: { type: String, required: true },
+            licenseNumber: { type: String, required: false, unique: true, trim: true },
+            licenseCategory: { type: String, required: false },
+            licenseExpiry: { type: Date, required: false },
+            contactNumber: { type: String, required: false },
             tripCompletion: { type: Number, default: 0 },
             safetyScore: { type: String, enum: ["Low", "Medium", "High"], default: "High" },
             safetyStatus: { type: String, enum: ["Available", "OnTrip", "Suspended"], default: "Available" },

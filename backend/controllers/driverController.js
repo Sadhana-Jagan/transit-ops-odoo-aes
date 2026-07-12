@@ -1,7 +1,7 @@
 const Driver = require("../models/Driver");
 const { mapDriverStatus, mapDriverSafetyStatus } = require("../utils/statusMappers");
-
 const mapDriverSafetyScore = (value) => {
+
     if (value == null || value === "") return "High";
 
     const numericScore = Number(value);
@@ -35,6 +35,8 @@ const getDrivers = async (_req, res) => {
         return res.status(500).json({ success: false, message: error.message });
     }
 };
+
+
 
 const createDriver = async (req, res) => {
     try {

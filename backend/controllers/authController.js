@@ -1,6 +1,6 @@
 const User = require("../models/User");
 const { signToken } = require("../utils/authToken");
-
+const Driver = require("../models/Driver")
 const register = async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
@@ -15,7 +15,21 @@ const register = async (req, res) => {
         }
 
         const user = await User.create({ name, email, password, role });
-
+        if (role.toLowerCase() === "driver") {
+            console.log(role)
+            await Driver.create({
+                name,
+                // Populate any required fields in your Driver schema
+                licenseNumber: "",
+                licenseCategory: "B",
+                licenseExpiry: null,
+                contactNumber: "",
+                tripCompletion: 0,
+                safetyScore: "High",
+                safetyStatus: "Available",
+                status: "Available",
+            });
+        }
         return res.status(201).json({
             success: true,
             message: "User registered",

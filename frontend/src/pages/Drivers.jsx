@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useApp, isLicenseExpired } from '../store/AppContext.jsx'
 import { Badge, Modal, Field, Empty, PageHeader, exportCSV } from '../components/ui.jsx'
 import { FiUsers, FiSearch, FiPlus, FiDownload, FiEdit2, FiTrash2 } from '../components/icons.jsx'
-
+import { getToken } from '../store/api.js'
 const EMPTY = { name: '', license: '', category: 'B', expiry: '', contact: '', tripsCompleted: 0, safety: 80, status: 'Available' }
 const CATS = ['A', 'B', 'C', 'D', 'E']
 const STATUSES = ['Available', 'On Trip', 'Off Duty', 'Suspended']
@@ -14,19 +14,39 @@ export default function Drivers() {
   const [status, setStatus] = useState('')
   const [modal, setModal] = useState(null)
   const [form, setForm] = useState(EMPTY)
-
+  const [availableDrivers, setAvailableDrivers] = useState([])
   const rows = useMemo(() => drivers.filter((d) =>
     (!q || `${d.name} ${d.license}`.toLowerCase().includes(q.toLowerCase())) &&
     (!status || d.status === status)
   ), [drivers, q, status])
 
-  const openNew = () => { setForm(EMPTY); setModal('new') }
+  const fetchDrivers = async () => {
+    const token = getToken()
+    console.log(token)
+    const response = await fetch("http://localhost:5001/api/drivers", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch drivers");
+    }
+
+    const result = await response.json();
+
+    setAvailableDrivers(
+      result.data.filter(driver => driver.status === "Available")
+    );
+  };
+  const openNew = async () => { await fetchDrivers(); setForm(EMPTY); setModal('new') }
   const openEdit = (d) => { setForm(d); setModal('edit') }
   const submit = async (e) => {
     e.preventDefault()
     await saveDriver({ ...form, safety: Number(form.safety), tripsCompleted: Number(form.tripsCompleted) || 0 })
     setModal(null)
   }
+
 
   return (
     <>
@@ -95,8 +115,37 @@ export default function Drivers() {
           </>}>
           <form onSubmit={submit}>
             <div className="form-grid">
-              <Field label="Full Name" required>
+              {/* <Field label="Full Name" required>
                 <input className="input" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              </Field> */}
+              <Field label="Full Name" required>
+                <select
+                  className="select"
+                  value={form.driverId || ""}
+                  onChange={(e) => {
+                    const driver = availableDrivers.find(
+                      (d) => d._id === e.target.value
+                    );
+
+                    setForm({
+                      ...form,
+                      driverId: driver._id,
+                      name: driver.name,
+                      contact: driver.contact,
+                      license: driver.license,
+                      category: driver.category,
+                      expiry: driver.expiry
+                    });
+                  }}
+                >
+                  <option value="">Select Driver</option>
+
+                  {availableDrivers.map((driver) => (
+                    <option key={driver._id} value={driver._id}>
+                      {driver.name}
+                    </option>
+                  ))}
+                </select>
               </Field>
               <Field label="License Number" required>
                 <input className="input" required value={form.license} onChange={(e) => setForm({ ...form, license: e.target.value })} />
