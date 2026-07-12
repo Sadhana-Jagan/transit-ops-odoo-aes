@@ -1,10 +1,36 @@
 const Driver = require("../models/Driver");
 const { mapDriverStatus, mapDriverSafetyStatus } = require("../utils/statusMappers");
 
+const mapDriverSafetyScore = (value) => {
+    if (value == null || value === "") return "High";
+
+    const numericScore = Number(value);
+    if (!Number.isNaN(numericScore)) {
+        if (numericScore >= 80) return "High";
+        if (numericScore >= 60) return "Medium";
+        return "Low";
+    }
+
+    const normalized = value.toString().toLowerCase().replace(/[_\s-]/g, "");
+    const scores = {
+        low: "Low",
+        medium: "Medium",
+        med: "Medium",
+        high: "High",
+    };
+
+    return scores[normalized] || null;
+};
+
 const getDrivers = async (_req, res) => {
     try {
-        const drivers = await Driver.find().sort({ createdAt: -1 });
-        return res.status(200).json({ success: true, count: drivers.length, data: drivers });
+        const drivers = await Driver.find().sort({ createdAt: -1 }).lean();
+        const data = drivers.map((driver) => ({
+            ...driver,
+            safetyScore: mapDriverSafetyScore(driver.safetyScore),
+        }));
+
+        return res.status(200).json({ success: true, count: data.length, data });
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });
     }
@@ -15,39 +41,50 @@ const createDriver = async (req, res) => {
         const {
             name,
             licenseNumber,
+            license,
             licenseCategory,
+            category,
             licenseExpiry,
+            expiry,
             contactNumber,
+            contact,
             tripCompletion,
+            tripsCompleted,
             safetyScore,
-            safetyStatus,
             safety,
+            safetyStatus,
             status,
         } = req.body;
 
-        if (!name || !licenseNumber || !licenseCategory || !licenseExpiry || !contactNumber) {
+        const payload = {
+            name,
+            licenseNumber: licenseNumber || license,
+            licenseCategory: licenseCategory || category,
+            licenseExpiry: licenseExpiry || expiry,
+            contactNumber: contactNumber || contact,
+            tripCompletion: tripCompletion ?? tripsCompleted ?? 0,
+        };
+
+        if (!payload.name || !payload.licenseNumber || !payload.licenseCategory || !payload.licenseExpiry || !payload.contactNumber) {
             return res.status(400).json({
                 success: false,
                 message: "name, licenseNumber, licenseCategory, licenseExpiry and contactNumber are required",
             });
         }
 
-        const existing = await Driver.findOne({ licenseNumber });
+        const existing = await Driver.findOne({ licenseNumber: payload.licenseNumber });
         if (existing) {
             return res.status(409).json({ success: false, message: "Driver license number already exists" });
         }
 
-        const payload = {
-            name,
-            licenseNumber,
-            licenseCategory,
-            licenseExpiry,
-            contactNumber,
-            tripCompletion: tripCompletion ?? 0,
-            safetyScore: safetyScore ?? 100,
-        };
+        const mappedSafetyScore = mapDriverSafetyScore(safetyScore ?? safety);
+        if (!mappedSafetyScore) {
+            return res.status(400).json({ success: false, message: "Invalid driver safety score" });
+        }
 
-        const mappedSafety = mapDriverSafetyStatus(safetyStatus || safety || "Available");
+        payload.safetyScore = mappedSafetyScore;
+
+        const mappedSafety = mapDriverSafetyStatus(safetyStatus || "Available");
         if (!mappedSafety) {
             return res.status(400).json({ success: false, message: "Invalid driver safety status" });
         }
@@ -70,7 +107,7 @@ const createDriver = async (req, res) => {
 
 const updateDriverStatus = async (req, res) => {
     try {
-        const { status, safetyStatus } = req.body;
+        const { status, safetyStatus, safetyScore, safety } = req.body;
 
         const update = {};
         if (status) {
@@ -89,8 +126,16 @@ const updateDriverStatus = async (req, res) => {
             update.safetyStatus = mappedSafety;
         }
 
+        if (safetyScore != null || safety != null) {
+            const mappedSafetyScore = mapDriverSafetyScore(safetyScore ?? safety);
+            if (!mappedSafetyScore) {
+                return res.status(400).json({ success: false, message: "Invalid driver safety score" });
+            }
+            update.safetyScore = mappedSafetyScore;
+        }
+
         if (!Object.keys(update).length) {
-            return res.status(400).json({ success: false, message: "status or safetyStatus is required" });
+            return res.status(400).json({ success: false, message: "status, safetyStatus or safetyScore is required" });
         }
 
         const driver = await Driver.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true });

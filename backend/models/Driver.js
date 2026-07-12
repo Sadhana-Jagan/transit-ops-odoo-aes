@@ -10,7 +10,7 @@ module.exports = mongoose.model(
             licenseExpiry: { type: Date, required: true },
             contactNumber: { type: String, required: true },
             tripCompletion: { type: Number, default: 0 },
-            safetyScore: { type: Number, default: 100 },
+            safetyScore: { type: String, enum: ["Low", "Medium", "High"], default: "High" },
             safetyStatus: { type: String, enum: ["Available", "OnTrip", "Suspended"], default: "Available" },
             status: { type: String, enum: ["Available", "OnTrip", "OffDuty", "Suspended"], default: "Available" },
         },
