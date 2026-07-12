@@ -1,6 +1,6 @@
 # TransitOps
 
-TransitOps is a full-stack fleet and transport-operations dashboard. It provides a role-aware interface for managing vehicles, drivers, trips, maintenance, fuel and expenses, plus operational analytics such as fleet utilization, fuel efficiency and vehicle ROI.
+TransitOps is a full-stack MERN fleet and transport-operations dashboard. It provides a role-aware interface for managing vehicles, drivers, trips, maintenance, fuel and expenses, plus operational analytics such as fleet utilization, fuel efficiency and vehicle ROI.
 
 The project consists of a React/Vite frontend and an Express/MongoDB API.
 
