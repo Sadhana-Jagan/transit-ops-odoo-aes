@@ -1,30 +1,23 @@
 {
-  "name": "frontend",
+  "name": "transitops",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "lint": "oxlint",
     "preview": "vite preview"
   },
   "dependencies": {
-    "axios": "^1.18.1",
-    "chart.js": "^4.5.1",
-    "react": "^19.2.7",
-    "react-chartjs-2": "^5.3.1",
-    "react-dom": "^19.2.7",
-    "react-icons": "^5.7.0",
-    "react-router-dom": "^7.18.1"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-icons": "^5.3.0",
+    "react-router-dom": "^6.26.2",
+    "recharts": "^2.12.7"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.3.2",
-    "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.3",
-    "oxlint": "^1.71.0",
-    "tailwindcss": "^4.3.2",
-    "vite": "^8.1.1"
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.8"
   }
 }
+
