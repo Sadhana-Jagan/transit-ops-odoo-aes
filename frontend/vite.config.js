@@ -8,7 +8,7 @@ export default defineConfig({
     open: true,
     proxy: {
       '/api': {
-        target: 'hhttps://transit-ops-odoo-aes.onrender.com',
+        target: 'http://localhost:5000',
         changeOrigin: true,
       },
     },
